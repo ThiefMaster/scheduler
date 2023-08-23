@@ -1,0 +1,10 @@
+-c requirements.txt
+flake8
+flake8-quotes
+flask-url-map-serializer
+isort
+pep8-naming
+pip-tools
+python-dotenv
+pyupgrade
+watchdog

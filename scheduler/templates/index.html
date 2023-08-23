@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div id="content" class="content">
+    <div class="sidebar">
+      <div>
+        <strong>Statusupdates</strong>
+        <select name="who" id="name">
+          <option value="" disabled selected>Wer bist du?</option>
+          {% for name in names %}
+            <option value="{{ name }}">{{ name }}</option>
+          {% endfor %}
+          <option value="__new">➕ Neu</option>
+        </select>
+        <select name="type">
+          <option value="" disabled selected>Status</option>
+          <option value="maybe">⚪ Noch unklar</option>
+          <option value="no">🔴 Keine Zeit</option>
+          <option value="ifneedbe">🟡 Zur Not</option>
+          <option value="yes">🟢 Passt</option>
+        </select>
+      </div>
+      <div style="margin-top: 2em;">
+        <strong>Termine finden</strong>
+        <select name="required_people" id="required-names" size="{{ [2, names|length + 1]|max }}" multiple>
+          <option value="" disabled style="font-weight: bold;">Benötigt</option>
+          {% for name in names %}
+            <option value="{{ name }}">{{ name }}</option>
+          {% endfor %}
+        </select>
+        <select name="wanted_people" id="wanted-names" size="{{ [2, names|length + 1]|max }}" multiple>
+          <option value="" disabled style="font-weight: bold;">Optional</option>
+          {% for name in names %}
+            <option value="{{ name }}">{{ name }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" id="search-button">Termine finden</button>
+      </div>
+    </div>
+    <div class="calendar">
+      <div id="calendar"></div>
+      <p>
+        Um einen vorhandenen Eintrag komplett zu löschen, klick ihn an.<br>
+        Um den Status hinzuzufügen oder zu ändern, klick in das jeweilige Kalenderfeld.
+        Du kannst auch mehrere Tage auf einmal auswählen.
+      </p>
+    </div>
+  </div>
+  <dialog id="results-dialog">
+    <div id="results"></div>
+    <form>
+      <button value="cancel" formmethod="dialog">Schließen</button>
+    </form>
+  </dialog>
+{% endblock %}

@@ -1,0 +1,35 @@
+{%- macro render_persons(persons, css_class, emoji) -%}
+  {%- for name in persons -%}
+    <span class="status {{ css_class }}">{{ emoji }} {{ name }}</span>
+  {%- endfor -%}
+{%- endmacro -%}
+
+<table class="results">
+  <thead>
+    <tr>
+      <th style="width: 1px">Datum</th>
+      <th>Verfügbarkeit</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in results %}
+      <tr>
+        <td>
+          <strong class="{{ 'perfect' if entry.perfect }}">{{ entry.day.strftime('%d.%m.%Y') }}</strong><br>
+          {{ entry.day.strftime('%A') }}
+        </td>
+        <td>
+          {{- render_persons(entry.required_available, 'status-yes', '💚') -}}
+          {{- render_persons(entry.required_maybe, 'status-maybe', '⚪') -}}
+          {{- render_persons(entry.required_ifneedbe, 'status-ifneedbe', '🟡') -}}
+          <br>
+          {{- render_persons(entry.wanted_available, 'status-yes', '💚') -}}
+          {{- render_persons(entry.wanted_maybe, 'status-maybe', '⚪') -}}
+          {{- render_persons(entry.wanted_ifneedbe, 'status-ifneedbe', '🟡') -}}
+          {{- render_persons(entry.wanted_unavailable, 'status-no', '❌') -}}
+          {{- render_persons(entry.wanted_noreply, 'status-noreply', '❓') -}}
+        </td>
+      </li>
+    {% endfor %}
+  </tbody>
+</table>

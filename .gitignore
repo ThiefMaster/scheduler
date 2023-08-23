@@ -1,0 +1,11 @@
+*.swp
+.vscode/
+dist/
+.venv/
+__pycache__/
+*.py[co]
+*.egg-info
+*.whl
+build/
+.cache/
+entries.json
