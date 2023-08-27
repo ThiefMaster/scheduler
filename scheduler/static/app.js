@@ -132,6 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
     opt.text = name;
     nameSelector.add(opt, nameSelector.options[nameSelector.options.length - 1]);
     nameSelector.value = name;
+    localStorage.setItem('name', name);
 
     let mustUpdateFilters = false;
     for (const field of [requiredNamesSelector, wantedNamesSelector, filterNamesSelector]) {
