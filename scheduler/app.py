@@ -1,3 +1,4 @@
+from datetime import date
 import locale
 import os
 from collections import defaultdict
@@ -82,12 +83,12 @@ def api_delete_entry(date, name):
 @use_kwargs({
     'required': fields.List(fields.String(), required=True),
     'wanted': fields.List(fields.String(), load_default=lambda: []),
+    'start': fields.Date(load_default=date.today, allow_none=True),
 })
-def api_find_dates(required, wanted):
+def api_find_dates(required, wanted, start):
     required = set(required)
     wanted = set(wanted) - required
-    # entries = [x for x in get_entries(start=date.today())]  # XXX
-    entries = get_entries()
+    entries = get_entries(start)
     by_day = defaultdict(list)
     for entry in entries:
         by_day[entry.date].append(entry)

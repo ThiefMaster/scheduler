@@ -65,8 +65,12 @@ async function deleteEvent(date, name) {
 
 async function findDates(required, wanted) {
   let resp;
+  const params = {required, wanted};
+  if (location.search.includes('allow-past=1')) {
+    params.start = null;
+  }
   try {
-    resp = await axios.post(`/api/find-dates`, {required, wanted});
+    resp = await axios.post(`/api/find-dates`, params);
   } catch (exc) {
     alert(`Finding dates failed: ${exc}`);
     return;
