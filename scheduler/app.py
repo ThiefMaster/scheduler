@@ -1,4 +1,6 @@
 import locale
+import logging
+import os
 from collections import defaultdict
 from datetime import date
 
@@ -29,6 +31,11 @@ app.add_template_global({
 }, 'import_map')
 db.init_app(app)
 locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+
+if 'gunicorn' in os.environ.get('SERVER_SOFTWARE', ''):
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
 
 
 @app.errorhandler(UnprocessableEntity)
