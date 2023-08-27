@@ -138,7 +138,12 @@ document.addEventListener('DOMContentLoaded', function () {
       const opt2 = document.createElement('option');
       opt2.value = name;
       opt2.text = name;
-      if (field === filterNamesSelector && !filterIsBlacklistSelector.checked) {
+      // if we're using whitelist-based filtering and have a filter applied, select the new item
+      if (
+        field === filterNamesSelector &&
+        !filterIsBlacklistSelector.checked &&
+        filterNamesSelector.selectedOptions.length
+      ) {
         opt2.selected = true;
         mustUpdateFilters = true;
       }
