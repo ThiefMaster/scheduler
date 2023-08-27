@@ -88,10 +88,15 @@ async function fetchEvents(start, end) {
   if (lastFetched.start === params.start && lastFetched.end === params.end) {
     return lastFetched.data;
   }
-  const resp = await fetch(`/api/entries/?${new URLSearchParams(params)}`);
-  const data = await resp.json();
-  Object.assign(lastFetched, {start: params.start, end: params.end, data: data});
-  return data;
+  let resp;
+  try {
+    resp = await axios.get(`/api/entries/`, params);
+  } catch (exc) {
+    console.log(`Fetch failed: ${exc}`);
+    throw exc;
+  }
+  Object.assign(lastFetched, {start: params.start, end: params.end, data: resp.data});
+  return resp.data;
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -156,7 +161,6 @@ document.addEventListener('DOMContentLoaded', function () {
   searchButton.addEventListener('click', () => {
     const required = Array.from(requiredNamesSelector.selectedOptions).map(x => x.value);
     const wanted = Array.from(wantedNamesSelector.selectedOptions).map(x => x.value);
-    console.log(required, wanted);
     if (!required.length) {
       alert('Wähl mindestens eine benötigte Person aus.');
       return;
