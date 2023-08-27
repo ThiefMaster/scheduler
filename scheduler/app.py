@@ -25,7 +25,7 @@ app.add_template_global({
     }
 }, 'import_map')
 db.init_app(app)
-locale.setlocale(locale.LC_ALL, 'de_DE')
+locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
 
 
 @app.errorhandler(UnprocessableEntity)
