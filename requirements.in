@@ -1,5 +1,5 @@
 flask
 flask-sqlalchemy
 marshmallow
-psycopg2
+psycopg2-binary
 webargs
