@@ -36,6 +36,19 @@
         </select>
         <button type="button" id="search-button">Termine finden</button>
       </div>
+      <div style="margin-top: 2em;">
+        <strong>Namen filtern</strong>
+        <select name="filter_people" id="filter-names" size="{{ [1, names|length]|max }}" multiple>
+          {% for name in names %}
+            <option value="{{ name }}">{{ name }}</option>
+          {% endfor %}
+        </select>
+        <label title="Zeigt nur Personen an, die nicht im Filter ausgewählt sind">
+          <input name="filter_blacklist" id="filter-blacklist" type="checkbox">
+          Blacklist
+        </label>
+        <button type="button" id="reset-filters-button">Filter löschen</button>
+      </div>
     </div>
     <div class="calendar">
       <div id="calendar"></div>

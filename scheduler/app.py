@@ -43,8 +43,12 @@ def index():
 
 
 @app.get('/api/entries/')
-def api_get_entries():
-    return get_entries()
+@use_kwargs({
+    'start': fields.Date(load_default=None),
+    'end': fields.Date(load_default=None),
+}, location='query')
+def api_get_entries(start, end):
+    return get_entries(start, end)
 
 
 @app.post('/api/entries/')

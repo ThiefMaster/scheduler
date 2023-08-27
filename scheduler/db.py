@@ -51,8 +51,13 @@ def load_entries():
     return EntrySchema().load(data, many=True)
 
 
-def get_entries():
-    return EntrySchema().dump(load_entries(), many=True)
+def get_entries(start=None, end=None):
+    entries = load_entries()
+    if start:
+        entries = [x for x in entries if x.date >= start]
+    if end:
+        entries = [x for x in entries if x.date < end]
+    return EntrySchema().dump(entries, many=True)
 
 
 def add_entry(entry):

@@ -18,6 +18,9 @@ const statusTextColors = {
   yes: '#000',
 };
 
+const lastFetched = {start: null, end: null, data: null};
+let nameFilterFunc = () => true;
+
 function getEventId(date, name) {
   const dateStr = typeof date === 'string' ? date : date.toISOString().substring(0, 10);
   return `${dateStr}-${name}`;
@@ -77,11 +80,28 @@ async function findDates(required, wanted) {
   resultsDialog.showModal();
 }
 
+async function fetchEvents(start, end) {
+  const params = {
+    start: start.toISOString().substring(0, 10),
+    end: end.toISOString().substring(0, 10),
+  };
+  if (lastFetched.start === params.start && lastFetched.end === params.end) {
+    return lastFetched.data;
+  }
+  const resp = await fetch(`/api/entries/?${new URLSearchParams(params)}`);
+  const data = await resp.json();
+  Object.assign(lastFetched, {start: params.start, end: params.end, data: data});
+  return data;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   const nameSelector = document.querySelector('#name');
   const requiredNamesSelector = document.querySelector('#required-names');
   const wantedNamesSelector = document.querySelector('#wanted-names');
+  const filterNamesSelector = document.querySelector('#filter-names');
+  const filterIsBlacklistSelector = document.querySelector('#filter-blacklist');
   const searchButton = document.querySelector('#search-button');
+  const resetFiltersButton = document.querySelector('#reset-filters-button');
 
   nameSelector.addEventListener('input', () => {
     if (nameSelector.value !== '__new') {
@@ -101,13 +121,22 @@ document.addEventListener('DOMContentLoaded', function () {
     nameSelector.add(opt, nameSelector.options[nameSelector.options.length - 1]);
     nameSelector.value = name;
 
-    for (const field of [requiredNamesSelector, wantedNamesSelector]) {
+    let mustUpdateFilters = false;
+    for (const field of [requiredNamesSelector, wantedNamesSelector, filterNamesSelector]) {
       const opt2 = document.createElement('option');
       opt2.value = name;
       opt2.text = name;
+      if (field === filterNamesSelector && !filterIsBlacklistSelector.checked) {
+        opt2.selected = true;
+        mustUpdateFilters = true;
+      }
 
       field.add(opt2);
       field.size = field.options.length;
+    }
+
+    if (mustUpdateFilters) {
+      updateFilter();
     }
   });
 
@@ -136,10 +165,56 @@ document.addEventListener('DOMContentLoaded', function () {
     findDates(required, wanted);
   });
 
+  const updateFilter = (refetch = true) => {
+    const filterNames = new Set(Array.from(filterNamesSelector.selectedOptions).map(x => x.value));
+    if (!filterNames.size) {
+      nameFilterFunc = () => true;
+    } else if (filterIsBlacklistSelector.checked) {
+      nameFilterFunc = name => !filterNames.has(name);
+    } else {
+      nameFilterFunc = name => filterNames.has(name);
+    }
+    // filter name selectors
+    Array.from(requiredNamesSelector.options)
+      .slice(1)
+      .concat(Array.from(wantedNamesSelector.options).slice(1))
+      .forEach(opt => {
+        const hidden = !nameFilterFunc(opt.value);
+        opt.style.display = hidden ? 'none' : null;
+        if (hidden) {
+          opt.selected = false;
+        }
+      });
+    // reload calendar
+    if (refetch) {
+      calendar.refetchEvents();
+    }
+    // save data
+    localStorage.setItem('filter', JSON.stringify([...filterNames]));
+    localStorage.setItem('filterBlacklist', JSON.stringify(filterIsBlacklistSelector.checked));
+  };
+
+  filterNamesSelector.addEventListener('input', updateFilter);
+  filterIsBlacklistSelector.addEventListener('input', updateFilter);
+  resetFiltersButton.addEventListener('click', () => {
+    Array.from(filterNamesSelector.selectedOptions).forEach(opt => {
+      opt.selected = false;
+    });
+    updateFilter();
+  });
+
   const previousName = localStorage.getItem('name');
   if (previousName && Array.from(nameSelector.options).some(opt => opt.value === previousName)) {
     nameSelector.value = previousName;
   }
+
+  const previousFilterBlacklist = JSON.parse(localStorage.getItem('filterBlacklist') || 'false');
+  const previousFilter = new Set(JSON.parse(localStorage.getItem('filter') || '[]'));
+  filterIsBlacklistSelector.checked = previousFilterBlacklist;
+  Array.from(filterNamesSelector.options).forEach(opt => {
+    opt.selected = previousFilter.has(opt.value);
+  });
+  updateFilter(false);
 
   const container = document.querySelector('#calendar');
   const calendar = new Calendar(container, {
@@ -153,9 +228,11 @@ document.addEventListener('DOMContentLoaded', function () {
     locale: deLocale,
     timeZone: 'Europe/Berlin',
     eventOrder: 'lowerTitle',
-    events: {
-      url: '/api/entries/',
-      eventDataTransform: ({date, name, type}) => getEventData(date, name, type),
+    events: async info => {
+      const events = await fetchEvents(info.start, info.end);
+      return events
+        .filter(({name}) => nameFilterFunc(name))
+        .map(({date, name, type}) => getEventData(date, name, type));
     },
     eventClick: async ({event}) => {
       if (confirm(`Eintrag ${event.title} (${event.start.toLocaleDateString('de')}) löschen?`)) {
