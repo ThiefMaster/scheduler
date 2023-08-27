@@ -55,7 +55,7 @@ async function saveEvent(date, name, type, errorCB) {
 
 async function deleteEvent(date, name) {
   try {
-    await axios.delete(`/api/entries/${date}/${name}`);
+    await axios.delete(`/api/entries/${date}/${encodeURIComponent(name)}`);
   } catch (exc) {
     console.log(`Delete failed: ${exc}`);
     return false;
