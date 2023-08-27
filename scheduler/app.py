@@ -1,6 +1,5 @@
 from datetime import date
 import locale
-import os
 from collections import defaultdict
 
 from flask import Flask, jsonify, render_template
@@ -13,7 +12,8 @@ from scheduler.db import EntrySchema, EntryType, add_entry, db, delete_entry, ge
 
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'postgresql:///scheduler')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///scheduler'
+app.config.from_envvar('SCHEDULER_CONFIG', silent=True)
 app.jinja_options = {'undefined': StrictUndefined}
 app.add_template_global({
     'imports': {
