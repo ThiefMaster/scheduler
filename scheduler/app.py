@@ -1,11 +1,12 @@
-from datetime import date
 import locale
 from collections import defaultdict
+from datetime import date
 
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 from jinja2 import StrictUndefined
 from marshmallow import fields
 from werkzeug.exceptions import UnprocessableEntity
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from scheduler.args import not_empty, use_kwargs
 from scheduler.db import EntrySchema, EntryType, add_entry, db, delete_entry, get_entries, get_names
@@ -14,6 +15,8 @@ from scheduler.db import EntrySchema, EntryType, add_entry, db, delete_entry, ge
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql:///scheduler'
 app.config.from_envvar('SCHEDULER_CONFIG', silent=True)
+if app.config.get('USE_PROXY'):
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.jinja_options = {'undefined': StrictUndefined}
 app.add_template_global({
     'imports': {
@@ -65,6 +68,7 @@ def api_add_entry(date, name, type):
     assert name != '__new'
     add_entry(date, name, type)
     db.session.commit()
+    app.logger.info(f'{request.remote_addr} added entry on {date} for {name}: {type}')
     return '', 201
 
 
@@ -76,6 +80,7 @@ def api_add_entry(date, name, type):
 def api_delete_entry(date, name):
     delete_entry(date, name)
     db.session.commit()
+    app.logger.info(f'{request.remote_addr} deleted entry on {date} for {name}')
     return '', 204
 
 
