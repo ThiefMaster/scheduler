@@ -1,10 +1,11 @@
-import errno
-import json
-from dataclasses import dataclass
-from datetime import date
 from enum import StrEnum, auto
 
-from marshmallow import Schema, fields, post_load
+from flask_sqlalchemy import SQLAlchemy
+from marshmallow import Schema, fields
+from sqlalchemy.dialects.postgresql import insert
+
+
+db = SQLAlchemy()
 
 
 class EntryType(StrEnum):
@@ -14,58 +15,40 @@ class EntryType(StrEnum):
     yes = auto()
 
 
-class EntrySchema(Schema):
-    date = fields.Date(required=True)
-    name = fields.String(required=True)
-    type = fields.Enum(EntryType, required=True)
-
-    @post_load
-    def _post_load(self, data, **kwargs):
-        return Entry(**data)
-
-
-@dataclass
-class Entry:
-    date: date
-    name: str
-    type: EntryType
+class Entry(db.Model):
+    __tablename__ = 'entries'
+    date = db.Column(db.Date, nullable=False, primary_key=True)
+    name = db.Column(db.String, nullable=False, primary_key=True)
+    type = db.Column(db.Enum(EntryType), nullable=False)
 
     @property
     def id(self):
         return f'{self.date}-{self.name}'
 
 
-def _save_entries(entries):
-    with open('entries.json', 'w') as f:
-        json.dump(EntrySchema().dump(entries, many=True), f)
-
-
-def load_entries():
-    try:
-        with open('entries.json') as f:
-            data = json.load(f)
-    except OSError as e:
-        if e.errno == errno.ENOENT:
-            return []
-        raise
-    return EntrySchema().load(data, many=True)
+class EntrySchema(Schema):
+    date = fields.Date(required=True)
+    name = fields.String(required=True)
+    type = fields.Enum(EntryType, required=True)
 
 
 def get_entries(start=None, end=None):
-    entries = load_entries()
+    query = db.select(Entry).order_by(Entry.date, Entry.name)
     if start:
-        entries = [x for x in entries if x.date >= start]
+        query = query.filter(Entry.date >= start)
     if end:
-        entries = [x for x in entries if x.date < end]
-    return EntrySchema().dump(entries, many=True)
+        query = query.filter(Entry.date < end)
+    return db.session.scalars(query).all()
 
 
-def add_entry(entry):
-    entries = [x for x in load_entries() if x.id != entry.id]
-    entries.append(entry)
-    _save_entries(entries)
+def get_names():
+    return db.session.execute(db.select(Entry.name.distinct())).scalars().all()
 
 
-def delete_entry(id):
-    entries = load_entries()
-    _save_entries([x for x in entries if x.id != id])
+def add_entry(date, name, type):
+    db.session.execute(insert(Entry).values({'date': date, 'name': name, 'type': type})
+                       .on_conflict_do_update('entries_pkey', set_={'type': type}))
+
+
+def delete_entry(date, name):
+    db.session.execute(db.delete(Entry).filter_by(date=date, name=name))

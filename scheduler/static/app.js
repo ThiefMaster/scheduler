@@ -27,8 +27,9 @@ function getEventId(date, name) {
 }
 
 function getEventData(date, name, type) {
+  const dateStr = typeof date === 'string' ? date : date.toISOString().substring(0, 10);
   return {
-    id: getEventId(date, name),
+    id: getEventId(dateStr, name),
     title: name,
     color: statusColors[type],
     textColor: statusTextColors[type],
@@ -36,6 +37,8 @@ function getEventData(date, name, type) {
     allDay: true,
     extendedProps: {
       lowerTitle: name.toLowerCase(),
+      date: dateStr,
+      name,
     },
   };
 }
@@ -50,9 +53,9 @@ async function saveEvent(date, name, type, errorCB) {
   }
 }
 
-async function deleteEvent(id) {
+async function deleteEvent(date, name) {
   try {
-    await axios.delete(`/api/entries/${id}`);
+    await axios.delete(`/api/entries/${date}/${name}`);
   } catch (exc) {
     console.log(`Delete failed: ${exc}`);
     return false;
@@ -240,7 +243,8 @@ document.addEventListener('DOMContentLoaded', function () {
     },
     eventClick: async ({event}) => {
       if (confirm(`Eintrag ${event.title} (${event.start.toLocaleDateString('de')}) löschen?`)) {
-        if (await deleteEvent(event.id)) {
+        const {name, date} = event.extendedProps;
+        if (await deleteEvent(date, name)) {
           event.remove();
         }
       }

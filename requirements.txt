@@ -9,7 +9,13 @@ blinker==1.6.2
 click==8.1.7
     # via flask
 flask==2.3.2
+    # via
+    #   -r requirements.in
+    #   flask-sqlalchemy
+flask-sqlalchemy==3.0.5
     # via -r requirements.in
+greenlet==2.0.2
+    # via sqlalchemy
 itsdangerous==2.1.2
     # via flask
 jinja2==3.1.2
@@ -26,6 +32,12 @@ packaging==23.1
     # via
     #   marshmallow
     #   webargs
+psycopg2==2.9.7
+    # via -r requirements.in
+sqlalchemy==2.0.20
+    # via flask-sqlalchemy
+typing-extensions==4.7.1
+    # via sqlalchemy
 webargs==8.3.0
     # via -r requirements.in
 werkzeug==2.3.7

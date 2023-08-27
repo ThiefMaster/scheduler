@@ -1,6 +1,6 @@
 import locale
+import os
 from collections import defaultdict
-from datetime import date
 
 from flask import Flask, jsonify, render_template
 from jinja2 import StrictUndefined
@@ -8,10 +8,11 @@ from marshmallow import fields
 from werkzeug.exceptions import UnprocessableEntity
 
 from scheduler.args import not_empty, use_kwargs
-from scheduler.db import Entry, EntryType, add_entry, delete_entry, get_entries, load_entries
+from scheduler.db import EntrySchema, EntryType, add_entry, db, delete_entry, get_entries, get_names
 
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'postgresql:///scheduler')
 app.jinja_options = {'undefined': StrictUndefined}
 app.add_template_global({
     'imports': {
@@ -22,6 +23,7 @@ app.add_template_global({
         '@fullcalendar/interaction': 'https://cdn.skypack.dev/@fullcalendar/interaction@6.1.8',
     }
 }, 'import_map')
+db.init_app(app)
 locale.setlocale(locale.LC_ALL, 'de_DE')
 
 
@@ -38,7 +40,7 @@ def handle_upe(exc):
 
 @app.route('/')
 def index():
-    names = sorted({x.name for x in load_entries()}, key=str.lower)
+    names = sorted(get_names(), key=str.lower)
     return render_template('index.html', names=names)
 
 
@@ -48,7 +50,8 @@ def index():
     'end': fields.Date(load_default=None),
 }, location='query')
 def api_get_entries(start, end):
-    return get_entries(start, end)
+    entries = get_entries(start, end)
+    return EntrySchema().dump(entries, many=True)
 
 
 @app.post('/api/entries/')
@@ -59,13 +62,19 @@ def api_get_entries(start, end):
 })
 def api_add_entry(date, name, type):
     assert name != '__new'
-    add_entry(Entry(date, name, type))
+    add_entry(date, name, type)
+    db.session.commit()
     return '', 201
 
 
-@app.delete('/api/entries/<path:id>')
-def api_delete_entry(id):
-    delete_entry(id)
+@app.delete('/api/entries/<date>/<path:name>')
+@use_kwargs({
+    'date': fields.Date(),
+    'name': fields.String(),
+})
+def api_delete_entry(date, name):
+    delete_entry(date, name)
+    db.session.commit()
     return '', 204
 
 
@@ -77,7 +86,8 @@ def api_delete_entry(id):
 def api_find_dates(required, wanted):
     required = set(required)
     wanted = set(wanted) - required
-    entries = [x for x in load_entries() if x.date >= date.today() or True]  # XXX
+    # entries = [x for x in get_entries(start=date.today())]  # XXX
+    entries = get_entries()
     by_day = defaultdict(list)
     for entry in entries:
         by_day[entry.date].append(entry)

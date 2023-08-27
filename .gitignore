@@ -8,4 +8,3 @@ __pycache__/
 *.whl
 build/
 .cache/
-entries.json
